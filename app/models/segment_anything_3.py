@@ -408,8 +408,8 @@ class SegmentAnything3(BaseModel):
                 continue
 
             if epsilon_factor > 0:
-                epsilon = epsilon_factor * cv2.arcLength(largest_contour, True)
-                approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+                epsilon = epsilon_factor * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, epsilon, True)
             else:
                 approx = contour
 
