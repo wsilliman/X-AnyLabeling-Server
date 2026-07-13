@@ -340,16 +340,20 @@ class SegmentAnything3(BaseModel):
 
             if show_masks:
                 mask = masks[i].squeeze()
-                points = self._mask_to_polygon(mask, epsilon_factor)
+                all_polygons = self._mask_to_polygon(mask, epsilon_factor)
 
-                if points:
-                    shape = Shape(
-                        label=label,
-                        shape_type="polygon",
-                        points=points,
-                        score=score,
-                    )
-                    shapes.append(shape)
+                if all_polygons:
+                    if isinstance(all_polygons[0][0], (int, float)):
+                        all_polygons = [all_polygons]
+
+                    for points in all_polygons:
+                        shape = Shape(
+                            label=label,
+                            shape_type="polygon",
+                            points=points,
+                            score=score,
+                        )
+                        shapes.append(shape)
 
             if show_boxes:
                 box = boxes[i]
@@ -397,22 +401,29 @@ class SegmentAnything3(BaseModel):
         if not contours:
             return []
 
-        largest_contour = max(contours, key=cv2.contourArea)
-        if epsilon_factor > 0:
-            epsilon = epsilon_factor * cv2.arcLength(largest_contour, True)
-            approx = cv2.approxPolyDP(largest_contour, epsilon, True)
-        else:
-            approx = largest_contour
+        all_polygons = []
 
-        points = []
-        for point in approx:
-            x, y = point[0]
-            points.append([float(x), float(y)])
+        for contour in contours:
+            if cv2.contourArea(contour) < 2:
+                continue
 
-        if points and points[0] != points[-1]:
-            points.append(points[0])
+            if epsilon_factor > 0:
+                epsilon = epsilon_factor * cv2.arcLength(largest_contour, True)
+                approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+            else:
+                approx = contour
 
-        return points
+            points = []
+            for point in approx:
+                x, y = point[0]
+                points.append([float(x), float(y)])
+
+            if points:
+                if points[0] != points[-1]:
+                    points.append(points[0])
+                all_polygons.append(points)
+
+        return all_polygons
 
     def unload(self):
         """Release model resources."""
